@@ -1,14 +1,6 @@
-import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import view.App
 
 /**
  * An application to filter through and compare countries.
@@ -37,63 +29,9 @@ import androidx.compose.ui.window.application
  * @author Subham
  * @since 4/3/2023
  */
-data class Country(
-    val name: String,
-    val threeLetterCode: String,
-    val twoLetterCode: String,
-    // In our CSV model, some countries share two
-    // regions: "Europe and Central Asia"
-    // To make it easier for us to match countries to a region
-    // when the user tries to search based on region, we'll
-    // split the region value in CSV with " and " to get all shared regions.
-    val regions: List<String>,
-    val incomeLevel: IncomeLevel,
-    val population: Long,
-    val fertilityRate: Double,
-    val unemploymentRate: Double,
-    val gdpPerCapita: Double,
-    val percentUsingInternet: Double,
-    val percentRenewableEnergy: Double,
-    val co2Emissions: Double
-)
-
-/**
- * Enum class for income level mappings.
- */
-enum class IncomeLevel
-{
-    // We're keeping the "Income" suffix as it'll reduce ops when we parse the CSV lines.
-    LowIncome, LowerMiddleIncome, UpperMiddleIncome, HighIncome;
-
-    companion object
-    {
-        // mark as a static field (java static)
-        @JvmStatic
-        val LOWERCASE = values()
-            // associate into a new Map<String, IncomeLevel> so we can
-            // access the levels by the format given in the CSV file
-            .associateBy { it.name.lowercase() }
-    }
-}
-
 // We are mapping countries by their ID as we'll have
 // quicker lookup times when searching by ID, ~O(1).
 val countries = mutableMapOf<Int, Country>()
-
-@Composable
-@Preview
-fun App()
-{
-    var text by remember { mutableStateOf("efe, World!") }
-
-    MaterialTheme {
-        Button(onClick = {
-            text = "dc, Desktop!"
-        }) {
-            Text(text)
-        }
-    }
-}
 
 fun main() = application {
     // Load in our CSV file from the resources embedded
@@ -106,15 +44,32 @@ fun main() = application {
         )
 
     // Remove the first element of the list as that
-    // indicate the field name of each column.
+    // indicates the field name for each column.
     csvLines.subList(1, csvLines.size - 1)
         .forEach {
             // A comma splits CSV data, so we're
             // splitting it to get an array of strings that
             // we can then parse and map to the fields in our Country model.
             val commaSplit = it.split(",")
+
+            /**
+             * Since we have complex tokens with quotes in our CSVs, we need to
+             * compensate as splitting with the comma would not work properly.
+             *
+             * For example, if we have a token: "12,\"Dubai, UAE\""
+             * Without compensation, we'd get the following tokens: ["12", "\"Dubai,", " UAE\""]
+             *
+             * To fix this, if we find a token that starts with "\"", we'll continue onto the
+             * next few until we find a token that ends with a quote ending, and combine them
+             * to get the complete token.
+             *
+             * With compensation, we should get the following result:
+             * ["12", "Dubai, UAE"]
+             */
             val quoteCompensated = mutableListOf<String>()
 
+            // Kotlin does not allow us to mutate index variables in
+            // for loops, so we'll use a while loop here.
             var index = 0
 
             while (index < commaSplit.size)
@@ -132,6 +87,7 @@ fun main() = application {
                 // remove quote prefix from the current component
                 var composite = "${component.substring(1)},"
 
+                // continue onto the next few to find the quotation ending token
                 while (!commaSplit[index++].endsWith("\""))
                 {
                     // add middle quote component & add back the comma
@@ -166,7 +122,10 @@ fun main() = application {
                 )
         }
 
-    Window(onCloseRequest = ::exitApplication) {
+    Window(
+        onCloseRequest = ::exitApplication,
+        title = "Discover Countries"
+    ) {
         App()
     }
 }

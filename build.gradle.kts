@@ -23,6 +23,9 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                api(compose.runtime)
+                api(compose.foundation)
+                api(compose.material)
             }
         }
         val jvmTest by getting
