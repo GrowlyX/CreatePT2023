@@ -26,7 +26,7 @@ import view.App
  * Country data comes from code.org:
  * https://docs.google.com/spreadsheets/d/11wuKDgkrSjVZCdWx5cALA2rJ0dhsNLGSoZrJwgPDrLI/edit#gid=1112641907
  *
- * @author Subham
+ * @author Subham Kumar
  * @since 4/3/2023
  */
 // We are mapping countries by their ID as we'll have

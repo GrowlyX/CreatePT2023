@@ -1,5 +1,5 @@
 /**
- * @author GrowlyX
+ * @author Subham Kumar
  * @since 4/4/2023
  */
 data class Country(

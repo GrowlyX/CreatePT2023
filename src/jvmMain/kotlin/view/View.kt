@@ -34,8 +34,9 @@ import androidx.compose.ui.unit.dp
 import countries
 
 /**
- * @author GrowlyX
+ * @author Subham Kumar, JetBrains
  * @since 4/4/2023
+ * @see (https://github.com/JetBrains/compose-multiplatform/blob/master/examples/issues)
  */
 @Composable
 @Preview
