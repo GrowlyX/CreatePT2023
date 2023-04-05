@@ -47,21 +47,20 @@ fun main() = application {
     // indicates the field name for each column.
     csvLines.subList(1, csvLines.size - 1)
         .forEach {
-            // A comma splits CSV data, so we're
-            // splitting it to get an array of strings that
-            // we can then parse and map to the fields in our Country model.
             val commaSplit = it.split(",")
 
             /**
              * Since we have complex tokens with quotes in our CSVs, we need to
-             * compensate as splitting with the comma would not work properly.
+             * compensate as delimiting with commas would not work properly.
              *
              * For example, if we have a token: "12,\"Dubai, UAE\""
              * Without compensation, we'd get the following tokens: ["12", "\"Dubai,", " UAE\""]
              *
-             * To fix this, if we find a token that starts with "\"", we'll continue onto the
-             * next few until we find a token that ends with a quote ending, and combine them
-             * to get the complete token.
+             * To fix this, we look for the initial quote in a token "\"" and continue to
+             * traverse the list until we find a token that ends with a quote ending.
+             *
+             * We then combine all the tokens we traversed through during this period
+             * with commas to create a singular token.
              *
              * With compensation, we should get the following result:
              * ["12", "Dubai, UAE"]
