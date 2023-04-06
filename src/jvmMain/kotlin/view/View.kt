@@ -1,8 +1,10 @@
 package view
 
 import Country
+import Expose
 import VerticalScrollbar
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,10 +17,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
@@ -29,15 +33,30 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.text.Paragraph
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import countries
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.IOException
+import java.net.URL
+import kotlin.reflect.KProperty
+import kotlin.reflect.full.hasAnnotation
 
 /**
  * @author Subham Kumar, JetBrains
@@ -193,8 +212,16 @@ fun CurrentCountryActive(country: Country)
             modifier = Modifier
                 .padding(15.dp)
                 .fillMaxSize()
-                .verticalScroll(state)
+                .verticalScroll(state),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            AsyncImage(
+                load = { loadImageBitmap("https://flagsapi.com/${country.twoLetterCode}/shiny/64.png") },
+                painterFor = { remember { BitmapPainter(it) } },
+                contentDescription = "Sample",
+                modifier = Modifier.width(64.dp)
+            )
+
             SelectionContainer {
                 Text(
                     text = country.name,
@@ -210,16 +237,68 @@ fun CurrentCountryActive(country: Country)
 
             SelectionContainer {
                 Text(
-                    text = country.regions.toString(),
+                    text = "Regions: ${country.regions.joinToString(", ")}",
                     modifier = Modifier.padding(4.dp),
                     style = MaterialTheme.typography.body1
                 )
+            }
+
+            Spacer(Modifier.height(5.dp))
+            Divider()
+            Spacer(Modifier.height(5.dp))
+
+            country::class.members
+                .filterIsInstance<KProperty<*>>()
+                .forEach {
+                    SelectionContainer {
+                        Text("${it.name}: ${it.call(country)}")
+                    }
+                }
+
+            Button({
+                // TODO: asdf
+            }) {
+                Text(text = "Click to compare!")
             }
         }
 
         VerticalScrollbar(
             Modifier.align(Alignment.CenterEnd).fillMaxHeight(),
             state
+        )
+    }
+}
+
+fun loadImageBitmap(url: String): ImageBitmap =
+    URL(url).openStream().buffered().use(::loadImageBitmap)
+
+@Composable
+fun <T> AsyncImage(
+    load: suspend () -> T,
+    painterFor: @Composable (T) -> Painter,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
+) {
+    val image: T? by produceState<T?>(null) {
+        value = withContext(Dispatchers.IO) {
+            try {
+                load()
+            } catch (e: IOException) {
+                // instead of printing to console, you can also write this to log,
+                // or show some error placeholder
+                e.printStackTrace()
+                null
+            }
+        }
+    }
+
+    if (image != null) {
+        Image(
+            painter = painterFor(image!!),
+            contentDescription = contentDescription,
+            contentScale = contentScale,
+            modifier = modifier
         )
     }
 }

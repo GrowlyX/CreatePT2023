@@ -26,6 +26,7 @@ kotlin {
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)
+                api("org.jetbrains.kotlin:kotlin-reflect:1.8.0")
             }
         }
         val jvmTest by getting

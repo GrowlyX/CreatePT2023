@@ -9,7 +9,7 @@ import view.App
  * and users can select countries to view their flag, stats, etc.
  *
  * The user is also able to search through all countries
- * or region based countries to find a specific one.
+ * or region based countries to find a specific one. (DONE)
  *
  * Users are also able to compare two countries and see the diffs
  * of their specific stats, for example:
