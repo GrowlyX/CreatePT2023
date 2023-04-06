@@ -223,7 +223,9 @@ fun CurrentCountryActive(country: Country)
             }
 
             Row(horizontalArrangement = Arrangement.Center) {
-                Text("Population of ${country.population}")
+                Text("Population of ${
+                    "Population of %,.2f".format(country.population.toFloat())
+                }")
             }
 
             Spacer(Modifier.height(8.dp))
