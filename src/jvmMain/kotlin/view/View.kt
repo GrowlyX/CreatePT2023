@@ -99,14 +99,9 @@ fun CountryList(
 )
 {
     val scroll = rememberScrollState()
-    val searchQuery = remember {
-        mutableStateOf("")
-    }
 
-    val regionFilters = remember {
-        mutableStateOf<MutableList<String>>(mutableListOf())
-    }
-
+    val searchQuery = remember { mutableStateOf("") }
+    val regionFilters = remember { mutableStateOf<List<String>>(emptyList()) }
     val dropdownEnabled = remember { mutableStateOf(false) }
 
     Column {
@@ -142,7 +137,9 @@ fun CountryList(
 
                         DropdownMenu(
                             expanded = dropdownEnabled.value,
-                            onDismissRequest = {},
+                            onDismissRequest = {
+                                dropdownEnabled.value = false
+                            },
                             focusable = true
                         ) {
                             aggregatedRegions
@@ -151,15 +148,25 @@ fun CountryList(
                                         onClick = context@{
                                             if (regionFilters.value.contains(it))
                                             {
-                                                regionFilters.value.remove(it)
+                                                val mutable = regionFilters.value.toMutableList()
+                                                mutable.remove(it)
+
+                                                regionFilters.value = mutable
                                                 return@context
                                             }
 
-                                            regionFilters.value.add(it)
-                                        },
-                                        enabled = regionFilters.value.contains(it)
+                                            val mutable = regionFilters.value.toMutableList()
+                                            mutable.add(it)
+
+                                            regionFilters.value = mutable
+                                        }
                                     ) {
-                                        Text(it)
+                                        Text(
+                                            "$it${
+                                                if (regionFilters.value.contains(it))
+                                                    " (enabled)" else ""
+                                            }"
+                                        )
                                     }
                                 }
                         }
@@ -185,7 +192,8 @@ fun CountryList(
                         scroll,
                         countryViewing = countryViewing,
                         searchQuery = searchQuery,
-                        compareSelectionActive = compareSelectionActive
+                        compareSelectionActive = compareSelectionActive,
+                        regionFilters = regionFilters
                     )
                 }
             }
@@ -198,7 +206,8 @@ fun ListBody(
     scroll: ScrollState,
     countryViewing: MutableState<Pair<Country?, Country?>>,
     searchQuery: MutableState<String>,
-    compareSelectionActive: MutableState<Boolean>
+    compareSelectionActive: MutableState<Boolean>,
+    regionFilters: MutableState<List<String>>
 )
 {
     Box(Modifier.fillMaxSize()) {
@@ -210,6 +219,12 @@ fun ListBody(
                             searchQuery.value,
                             ignoreCase = true
                         )
+                }
+                .filter {
+                    regionFilters.value.isEmpty() || it.value.regions
+                        .any { region ->
+                            region in regionFilters.value
+                        }
                 }
                 .forEach {
                     Box(
