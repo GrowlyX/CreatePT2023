@@ -1,6 +1,7 @@
 package view
 
 import Country
+import IncomeLevel
 import VerticalScrollbar
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
@@ -54,6 +55,10 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.net.URL
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.defaultType
+import kotlin.reflect.full.isSubtypeOf
+import kotlin.reflect.full.starProjectedType
+import kotlin.reflect.jvm.jvmErasure
 
 /**
  * @author Subham Kumar, JetBrains
@@ -287,14 +292,48 @@ fun CurrentCountryActive(
                         if (pair.value.second != null)
                         {
                             Text(text = buildAnnotatedString {
+                                val originalCountryCall = it.call(country)
                                 pushStyle(style = SpanStyle(color = Color.Gray))
-                                append("${it.call(country)}")
+                                append("$originalCountryCall")
                                 pop()
 
                                 append(" - ${it.name} - ")
 
+                                val comparisonCountryCall = it.call(pair.value.second)
                                 pushStyle(style = SpanStyle(color = Color.Gray))
-                                append("${it.call(pair.value.second)}")
+                                append("$comparisonCountryCall")
+                                pop()
+
+                                fun embedDiffs(diff: Float, gt: Boolean) =
+                                    if (gt)
+                                    {
+                                        pushStyle(style = SpanStyle(color = Color.Green))
+                                        append(" (+${"%,.2f".format(diff)})")
+                                    } else
+                                    {
+                                        pushStyle(style = SpanStyle(color = Color.Red))
+                                        append(" (${"%,.2f".format(diff)})")
+                                    }
+
+                                // Since kotlin doesn't have any minus, gte extensions for
+                                // the Number class, we have to do this:
+                                if (originalCountryCall is Double && comparisonCountryCall is Double)
+                                {
+                                    val diff = comparisonCountryCall - originalCountryCall
+                                    embedDiffs(diff.toFloat(), diff > 0)
+                                }
+
+                                if (originalCountryCall is Long && comparisonCountryCall is Long)
+                                {
+                                    val diff = comparisonCountryCall - originalCountryCall
+                                    embedDiffs(diff.toFloat(), diff > 0)
+                                }
+
+                                if (originalCountryCall is IncomeLevel && comparisonCountryCall is IncomeLevel)
+                                {
+                                    val diff = comparisonCountryCall.ordinal - originalCountryCall.ordinal
+                                    embedDiffs(diff.toFloat(), diff > 0)
+                                }
                             })
                         } else
                         {
