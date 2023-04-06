@@ -304,15 +304,22 @@ fun CurrentCountryActive(
                                 append("$comparisonCountryCall")
                                 pop()
 
-                                fun embedDiffs(diff: Float, gt: Boolean) =
-                                    if (gt)
+                                fun embedDiffs(diff: Float, gt: Boolean, eq: Boolean) =
+                                    if (!eq)
                                     {
-                                        pushStyle(style = SpanStyle(color = Color.Green))
-                                        append(" (+${"%,.2f".format(diff)})")
+                                        if (gt)
+                                        {
+                                            pushStyle(style = SpanStyle(color = Color.Green))
+                                            append(" (+${"%,.2f".format(diff)})")
+                                        } else
+                                        {
+                                            pushStyle(style = SpanStyle(color = Color.Red))
+                                            append(" (${"%,.2f".format(diff)})")
+                                        }
                                     } else
                                     {
-                                        pushStyle(style = SpanStyle(color = Color.Red))
-                                        append(" (${"%,.2f".format(diff)})")
+                                        pushStyle(style = SpanStyle(color = Color.DarkGray))
+                                        append(" (==)")
                                     }
 
                                 // Since kotlin doesn't have any minus, gte extensions for
@@ -320,19 +327,19 @@ fun CurrentCountryActive(
                                 if (originalCountryCall is Double && comparisonCountryCall is Double)
                                 {
                                     val diff = comparisonCountryCall - originalCountryCall
-                                    embedDiffs(diff.toFloat(), diff > 0)
+                                    embedDiffs(diff.toFloat(), diff > 0, diff == 0.0)
                                 }
 
                                 if (originalCountryCall is Long && comparisonCountryCall is Long)
                                 {
                                     val diff = comparisonCountryCall - originalCountryCall
-                                    embedDiffs(diff.toFloat(), diff > 0)
+                                    embedDiffs(diff.toFloat(), diff > 0, diff == 0L)
                                 }
 
                                 if (originalCountryCall is IncomeLevel && comparisonCountryCall is IncomeLevel)
                                 {
                                     val diff = comparisonCountryCall.ordinal - originalCountryCall.ordinal
-                                    embedDiffs(diff.toFloat(), diff > 0)
+                                    embedDiffs(diff.toFloat(), diff > 0, diff == 0)
                                 }
                             })
                         } else
