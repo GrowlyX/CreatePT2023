@@ -21,6 +21,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
+import androidx.compose.material.ButtonColors
+import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
@@ -36,11 +38,14 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.loadImageBitmap
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import countries
@@ -60,7 +65,11 @@ import kotlin.reflect.KProperty
 fun App()
 {
     val countryViewing = remember {
-        mutableStateOf<Country?>(null)
+        mutableStateOf<Pair<Country?, Country?>>(null to null)
+    }
+
+    val compareSelectionActive = remember {
+        mutableStateOf(false)
     }
 
     MaterialTheme {
@@ -69,16 +78,19 @@ fun App()
                 modifier = Modifier.fillMaxWidth(0.4f),
                 contentAlignment = Alignment.Center
             ) {
-                CountryList(countryViewing)
+                CountryList(countryViewing, compareSelectionActive)
             }
 
-            CurrentCountry(countryViewing.value)
+            CurrentCountry(countryViewing, compareSelectionActive)
         }
     }
 }
 
 @Composable
-fun CountryList(countryViewing: MutableState<Country?>)
+fun CountryList(
+    countryViewing: MutableState<Pair<Country?, Country?>>,
+    compareSelectionActive: MutableState<Boolean>
+)
 {
     val scroll = rememberScrollState()
     val searchQuery = remember {
@@ -122,7 +134,8 @@ fun CountryList(countryViewing: MutableState<Country?>)
                     ListBody(
                         scroll,
                         countryViewing = countryViewing,
-                        searchQuery = searchQuery
+                        searchQuery = searchQuery,
+                        compareSelectionActive = compareSelectionActive
                     )
                 }
             }
@@ -133,20 +146,31 @@ fun CountryList(countryViewing: MutableState<Country?>)
 @Composable
 fun ListBody(
     scroll: ScrollState,
-    countryViewing: MutableState<Country?>,
+    countryViewing: MutableState<Pair<Country?, Country?>>,
     searchQuery: MutableState<String>,
+    compareSelectionActive: MutableState<Boolean>
 )
 {
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.verticalScroll(scroll)) {
             countries
                 .filter {
-                    it.value.name.lowercase().contains(searchQuery.value.lowercase())
+                    it.value.name
+                        .contains(
+                            searchQuery.value,
+                            ignoreCase = true
+                        )
                 }
                 .forEach {
                     Box(
                         modifier = Modifier.clickable {
-                            countryViewing.value = it.value
+                            if (compareSelectionActive.value)
+                            {
+                                countryViewing.value = countryViewing.value.first to it.value
+                                return@clickable
+                            }
+
+                            countryViewing.value = it.value to null
                         },
                         contentAlignment = Alignment.CenterStart
                     ) {
@@ -184,19 +208,25 @@ fun CurrentCountryStatus(
 
 @Composable
 fun CurrentCountry(
-    country: Country?
+    country: MutableState<Pair<Country?, Country?>>,
+    compareSelectionActive: MutableState<Boolean>
 )
 {
-    when (country)
+    when (country.value.first)
     {
         null -> CurrentCountryStatus { Text("Select country") }
-        else -> CurrentCountryActive(country)
+        else -> CurrentCountryActive(country, compareSelectionActive)
     }
 }
 
 @Composable
-fun CurrentCountryActive(country: Country)
+fun CurrentCountryActive(
+    pair: MutableState<Pair<Country?, Country?>>,
+    compareSelectionActive: MutableState<Boolean>
+)
 {
+    val country = pair.value.first!!
+
     Box(Modifier.fillMaxSize()) {
         val state = rememberScrollState()
 
@@ -222,10 +252,18 @@ fun CurrentCountryActive(country: Country)
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.Center) {
-                Text("Population of ${
+            Text(
+                "Population of ${
                     "Population of %,.0f".format(country.population.toFloat())
-                }")
+                }"
+            )
+
+            if (pair.value.second != null)
+            {
+                Text(
+                    "Comparing against ${pair.value.second!!.name}...",
+                    color = Color.Gray
+                )
             }
 
             Spacer(Modifier.height(8.dp))
@@ -246,14 +284,52 @@ fun CurrentCountryActive(country: Country)
                 .filterIsInstance<KProperty<*>>()
                 .forEach {
                     SelectionContainer {
-                        Text("${it.name}: ${it.call(country)}")
+                        if (pair.value.second != null)
+                        {
+                            Text(text = buildAnnotatedString {
+                                pushStyle(style = SpanStyle(color = Color.Gray))
+                                append("${it.call(country)}")
+                                pop()
+
+                                append(" - ${it.name} - ")
+
+                                pushStyle(style = SpanStyle(color = Color.Gray))
+                                append("${it.call(pair.value.second)}")
+                            })
+                        } else
+                        {
+                            Text("${it.name}: ${it.call(country)}")
+                        }
                     }
                 }
 
-            Button({
-                // TODO: asdf
-            }) {
-                Text(text = "Click to compare!")
+            if (pair.value.second == null)
+            {
+                Button({
+                    compareSelectionActive.value = true
+                }) {
+                    Text(
+                        text = if (!compareSelectionActive.value)
+                            "Click to compare" else "Click a country on the sidebar to compare..."
+                    )
+                }
+            } else
+            {
+                Button(
+                    onClick = {
+                        pair.value = pair.value.first to null
+                        compareSelectionActive.value = false
+                    },
+                    colors = ButtonDefaults
+                        .buttonColors(
+                            backgroundColor = MaterialTheme
+                                .colors.onError
+                        )
+                ) {
+                    Text(
+                        text = "Clear comparison!"
+                    )
+                }
             }
         }
 
@@ -275,12 +351,17 @@ fun <T> AsyncImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     watchChangeKey: Any?
-) {
-    val image: T? by produceState<T?>(null, watchChangeKey) {
+)
+{
+    val image: T? by produceState<T?>(
+        initialValue = null, watchChangeKey
+    ) {
         value = withContext(Dispatchers.IO) {
-            try {
+            try
+            {
                 load()
-            } catch (e: IOException) {
+            } catch (e: IOException)
+            {
                 // instead of printing to console, you can also write this to log,
                 // or show some error placeholder
                 e.printStackTrace()
@@ -289,7 +370,8 @@ fun <T> AsyncImage(
         }
     }
 
-    if (image != null) {
+    if (image != null)
+    {
         Image(
             painter = painterFor(image!!),
             contentDescription = contentDescription,
