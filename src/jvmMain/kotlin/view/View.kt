@@ -123,6 +123,16 @@ fun CountryList(
                     Row(
                         horizontalArrangement = Arrangement.Center
                     ) {
+                        TextField(
+                            value = searchQuery.value,
+                            onValueChange = {
+                                searchQuery.value = it
+                            },
+                            label = {
+                                Text("Search...")
+                            }
+                        )
+
                         val aggregatedRegions = countries.values
                             .flatMap { it.regions }
                             .toSet()
@@ -170,16 +180,6 @@ fun CountryList(
                                     }
                                 }
                         }
-
-                        TextField(
-                            value = searchQuery.value,
-                            onValueChange = {
-                                searchQuery.value = it
-                            },
-                            label = {
-                                Text("Search...")
-                            }
-                        )
                     }
 
                     Spacer(Modifier.height(15.dp))
