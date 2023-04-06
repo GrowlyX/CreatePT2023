@@ -1,7 +1,6 @@
 package view
 
 import Country
-import Expose
 import VerticalScrollbar
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
@@ -19,14 +18,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
@@ -44,19 +41,14 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.loadImageBitmap
-import androidx.compose.ui.text.Paragraph
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import countries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.io.IOException
 import java.net.URL
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.hasAnnotation
 
 /**
  * @author Subham Kumar, JetBrains
@@ -217,9 +209,10 @@ fun CurrentCountryActive(country: Country)
         ) {
             AsyncImage(
                 load = { loadImageBitmap("https://flagsapi.com/${country.twoLetterCode}/shiny/64.png") },
-                painterFor = { remember { BitmapPainter(it) } },
-                contentDescription = "Sample",
-                modifier = Modifier.width(64.dp)
+                painterFor = { BitmapPainter(it) },
+                contentDescription = "Flag",
+                modifier = Modifier.width(64.dp),
+                watchChangeKey = country.twoLetterCode
             )
 
             SelectionContainer {
@@ -279,8 +272,9 @@ fun <T> AsyncImage(
     contentDescription: String,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
+    watchChangeKey: Any?
 ) {
-    val image: T? by produceState<T?>(null) {
+    val image: T? by produceState<T?>(null, watchChangeKey) {
         value = withContext(Dispatchers.IO) {
             try {
                 load()
