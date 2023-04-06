@@ -7,6 +7,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,11 +25,17 @@ import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
 import androidx.compose.material.Divider
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -95,7 +102,12 @@ fun CountryList(
     val searchQuery = remember {
         mutableStateOf("")
     }
-    // TODO: add region filters
+
+    val regionFilters = remember {
+        mutableStateOf<MutableList<String>>(mutableListOf())
+    }
+
+    val dropdownEnabled = remember { mutableStateOf(false) }
 
     Column {
         Scaffold(
@@ -111,18 +123,57 @@ fun CountryList(
                             )
                         }
                     )
-
                     Spacer(Modifier.height(15.dp))
 
-                    TextField(
-                        value = searchQuery.value,
-                        onValueChange = {
-                            searchQuery.value = it
-                        },
-                        label = {
-                            Text("Search...")
+                    Row(
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        val aggregatedRegions = countries.values
+                            .flatMap { it.regions }
+                            .toSet()
+
+                        IconButton(
+                            onClick = {
+                                dropdownEnabled.value = !dropdownEnabled.value
+                            }
+                        ) {
+                            Icon(Icons.Default.Edit, "Edit filters.")
                         }
-                    )
+
+                        DropdownMenu(
+                            expanded = dropdownEnabled.value,
+                            onDismissRequest = {},
+                            focusable = true
+                        ) {
+                            aggregatedRegions
+                                .forEach {
+                                    DropdownMenuItem(
+                                        onClick = context@{
+                                            if (regionFilters.value.contains(it))
+                                            {
+                                                regionFilters.value.remove(it)
+                                                return@context
+                                            }
+
+                                            regionFilters.value.add(it)
+                                        },
+                                        enabled = regionFilters.value.contains(it)
+                                    ) {
+                                        Text(it)
+                                    }
+                                }
+                        }
+
+                        TextField(
+                            value = searchQuery.value,
+                            onValueChange = {
+                                searchQuery.value = it
+                            },
+                            label = {
+                                Text("Search...")
+                            }
+                        )
+                    }
 
                     Spacer(Modifier.height(15.dp))
                     Divider()
