@@ -1,6 +1,5 @@
 /**
- * @author Subham Kumar
- * @since 4/4/2023
+ * Data class mapping for CSV entries in countries.csv.
  */
 data class Country(
     val name: String,
@@ -8,6 +7,7 @@ data class Country(
     val twoLetterCode: String,
     // In our CSV model, some countries share two
     // regions: "Europe and Central Asia"
+
     // To make it easier for us to match countries to a region
     // when the user tries to search based on region, we'll
     // split the region value in CSV with " and " to get all shared regions.
