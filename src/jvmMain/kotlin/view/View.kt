@@ -302,13 +302,39 @@ fun CurrentCountryActive(
                 .verticalScroll(state),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            AsyncImage(
-                load = { loadImageBitmap("https://flagsapi.com/${country.twoLetterCode}/shiny/64.png") },
-                painterFor = { BitmapPainter(it) },
-                contentDescription = "Flag",
-                modifier = Modifier.width(64.dp),
-                watchChangeKey = country.twoLetterCode
-            )
+            if (pair.value.second != null)
+            {
+                Row(
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    AsyncImage(
+                        load = { loadImageBitmap("https://flagsapi.com/${country.twoLetterCode}/shiny/64.png") },
+                        painterFor = { BitmapPainter(it) },
+                        contentDescription = "Flag",
+                        modifier = Modifier.width(64.dp),
+                        watchChangeKey = country.twoLetterCode
+                    )
+
+                    Text("vs.")
+
+                    AsyncImage(
+                        load = { loadImageBitmap("https://flagsapi.com/${pair.value.second!!.twoLetterCode}/shiny/64.png") },
+                        painterFor = { BitmapPainter(it) },
+                        contentDescription = "Flag",
+                        modifier = Modifier.width(64.dp),
+                        watchChangeKey = pair.value.second!!.twoLetterCode
+                    )
+                }
+            } else
+            {
+                AsyncImage(
+                    load = { loadImageBitmap("https://flagsapi.com/${country.twoLetterCode}/shiny/64.png") },
+                    painterFor = { BitmapPainter(it) },
+                    contentDescription = "Flag",
+                    modifier = Modifier.width(64.dp),
+                    watchChangeKey = country.twoLetterCode
+                )
+            }
 
             SelectionContainer {
                 Text(
