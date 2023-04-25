@@ -33,6 +33,86 @@ import view.App
 // quicker lookup times when searching by ID, ~O(1).
 val countries = mutableMapOf<Int, Country>()
 
+fun parseCommaSeparatedValue(csv: String): Country
+{
+    val commaSplit = csv.split(",")
+
+    /**
+     * Since we have complex tokens with quotes in our CSVs, we need to
+     * compensate as delimiting with commas would not work properly.
+     *
+     * For example, if we have a token: "12,\"Dubai, UAE\""
+     * Without compensation, we'd get the following tokens: ["12", "\"Dubai,", " UAE\""]
+     *
+     * To fix this, we look for the initial quote in a token "\"" and continue to
+     * traverse the list until we find a token that ends with a quote ending.
+     *
+     * We then combine all the tokens we traversed through during this period
+     * with commas to create a singular token.
+     *
+     * With compensation, we should get the following result:
+     * ["12", "Dubai, UAE"]
+     */
+    val quoteCompensated = mutableListOf<String>()
+
+    // Kotlin does not allow us to mutate index variables in
+    // for loops, so we'll use a while loop here.
+    var index = 0
+
+    while (index < commaSplit.size)
+    {
+        val component = commaSplit[index]
+
+        // we can move on if the component isn't quoted
+        if (!component.startsWith("\""))
+        {
+            quoteCompensated += component
+            index += 1
+            continue
+        }
+
+        // remove quote prefix from the current component
+        var composite = "${component.substring(1)},"
+
+        // continue onto the next few to find the quotation ending token
+        while (!commaSplit[index++].endsWith("\""))
+        {
+            // add middle quote component & add back the comma
+            // which we previously delimited
+            composite += "${commaSplit[index]},"
+        }
+
+        // remove the quote suffix and the final comma
+        quoteCompensated += composite
+            .substring(0, composite.length - 2)
+    }
+
+    // ensure a value is still returned if parsing to double fails
+    fun String.safeDouble() = toDoubleOrNull() ?: -1.0
+
+    return Country(
+        id = quoteCompensated[0].toInt(),
+        name = quoteCompensated[1],
+        threeLetterCode = quoteCompensated[2],
+        twoLetterCode = quoteCompensated[3],
+        regions = quoteCompensated[4].split(" and ").toList(),
+        incomeLevel = IncomeLevel.LOWERCASE[
+            quoteCompensated[5].lowercase()
+                .split(" ")
+                .joinToString("")
+        ]!!,
+        population = quoteCompensated[6].toLongOrNull() ?: 0,
+        // We will add preconditions when accessing these & displaying to the user-
+        // if the double/long value is -1, then we'll display something else to make sure they don't get confused.
+        fertilityRate = quoteCompensated[7].safeDouble(),
+        unemploymentRate = quoteCompensated[8].safeDouble(),
+        gdpPerCapita = quoteCompensated[9].safeDouble(),
+        percentUsingInternet = quoteCompensated[10].safeDouble(),
+        percentRenewableEnergy = quoteCompensated[11].safeDouble(),
+        co2Emissions = quoteCompensated[12].safeDouble()
+    )
+}
+
 fun main() = application {
     // Load in our CSV file from the resources embedded
     // into our Jar file as a mutable list.
@@ -47,78 +127,8 @@ fun main() = application {
     // indicates the field name for each column.
     csvLines.subList(1, csvLines.size - 1)
         .forEach {
-            val commaSplit = it.split(",")
-
-            /**
-             * Since we have complex tokens with quotes in our CSVs, we need to
-             * compensate as delimiting with commas would not work properly.
-             *
-             * For example, if we have a token: "12,\"Dubai, UAE\""
-             * Without compensation, we'd get the following tokens: ["12", "\"Dubai,", " UAE\""]
-             *
-             * To fix this, we look for the initial quote in a token "\"" and continue to
-             * traverse the list until we find a token that ends with a quote ending.
-             *
-             * We then combine all the tokens we traversed through during this period
-             * with commas to create a singular token.
-             *
-             * With compensation, we should get the following result:
-             * ["12", "Dubai, UAE"]
-             */
-            val quoteCompensated = mutableListOf<String>()
-
-            // Kotlin does not allow us to mutate index variables in
-            // for loops, so we'll use a while loop here.
-            var index = 0
-
-            while (index < commaSplit.size)
-            {
-                val component = commaSplit[index]
-
-                // we can move on if the component isn't quoted
-                if (!component.startsWith("\""))
-                {
-                    quoteCompensated += component
-                    index += 1
-                    continue
-                }
-
-                // remove quote prefix from the current component
-                var composite = "${component.substring(1)},"
-
-                // continue onto the next few to find the quotation ending token
-                while (!commaSplit[index++].endsWith("\""))
-                {
-                    // add middle quote component & add back the comma
-                    // which we previously delimited
-                    composite += "${commaSplit[index]},"
-                }
-
-                // remove the quote suffix and the final comma
-                quoteCompensated += composite
-                    .substring(0, composite.length - 2)
-            }
-
-            // ensure a value is still returned if parsing to double fails
-            fun String.safeDouble() = toDoubleOrNull() ?: -1.0
-
-            countries[quoteCompensated[0].toInt()] =
-                Country(
-                    name = quoteCompensated[1],
-                    threeLetterCode = quoteCompensated[2],
-                    twoLetterCode = quoteCompensated[3],
-                    regions = quoteCompensated[4].split(" and ").toList(),
-                    incomeLevel = IncomeLevel.LOWERCASE[quoteCompensated[5].lowercase().split(" ").joinToString("")]!!,
-                    population = quoteCompensated[6].toLongOrNull() ?: 0,
-                    // We will add preconditions when accessing these & displaying to the user-
-                    // if the double/long value is -1, then we'll display something else to make sure they don't get confused.
-                    fertilityRate = quoteCompensated[7].safeDouble(),
-                    unemploymentRate = quoteCompensated[8].safeDouble(),
-                    gdpPerCapita = quoteCompensated[9].safeDouble(),
-                    percentUsingInternet = quoteCompensated[10].safeDouble(),
-                    percentRenewableEnergy = quoteCompensated[11].safeDouble(),
-                    co2Emissions = quoteCompensated[12].safeDouble()
-                )
+            val country = parseCommaSeparatedValue(it)
+            countries[country.id] = country
         }
 
     Window(

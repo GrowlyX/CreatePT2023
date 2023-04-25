@@ -1,16 +1,11 @@
 /**
- * Annotation to expose stat parameters.
- */
-@Target(AnnotationTarget.FIELD)
-annotation class Expose
-
-/**
  * Data class mapping for CSV entries in countries.csv.
  */
 data class Country(
+    val id: Int,
     val name: String,
-    @Expose val threeLetterCode: String,
-    @Expose val twoLetterCode: String,
+    val threeLetterCode: String,
+    val twoLetterCode: String,
     // In our CSV model, some countries share two
     // regions: "Europe and Central Asia"
 
@@ -18,14 +13,14 @@ data class Country(
     // when the user tries to search based on region, we'll
     // split the region value in CSV with " and " to get all shared regions.
     val regions: List<String>,
-    @Expose val incomeLevel: IncomeLevel,
-    @Expose val population: Long,
-    @Expose val fertilityRate: Double,
-    @Expose val unemploymentRate: Double,
-    @Expose val gdpPerCapita: Double,
-    @Expose val percentUsingInternet: Double,
-    @Expose val percentRenewableEnergy: Double,
-    @Expose val co2Emissions: Double
+    val incomeLevel: IncomeLevel,
+    val population: Long,
+    val fertilityRate: Double,
+    val unemploymentRate: Double,
+    val gdpPerCapita: Double,
+    val percentUsingInternet: Double,
+    val percentRenewableEnergy: Double,
+    val co2Emissions: Double
 )
 
 /**
